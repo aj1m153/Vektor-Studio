@@ -88,12 +88,13 @@ if st.button("Run Comparison"):
     )
 
     results = []
-    trained_models = {}
+    trained_models = []
+
+    st.subheader("🔍 Training Debug Output")
 
     for model_name in selected:
         module_name, class_name, params = MODEL_CATALOGUE[model_name]
 
-        # Initialize row with ALL metrics (ensures consistency)
         row = {
             "Model": model_name,
             "Accuracy": np.nan,
@@ -120,7 +121,7 @@ if st.button("Run Comparison"):
             pipe.fit(X_train, y_train)
             preds = pipe.predict(X_test)
 
-            trained_models[model_name] = pipe
+            trained_models.append((model_name, pipe))
 
             if task == "Classification":
                 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
@@ -129,6 +130,9 @@ if st.button("Run Comparison"):
                 row["Precision"] = precision_score(y_test, preds, average="weighted", zero_division=0)
                 row["Recall"] = recall_score(y_test, preds, average="weighted", zero_division=0)
                 row["F1"] = f1_score(y_test, preds, average="weighted")
+
+                # 🔍 DEBUG PRINT
+                st.write(f"{model_name} → Precision:", row["Precision"])
 
                 if hasattr(pipe, "predict_proba"):
                     try:
@@ -146,11 +150,12 @@ if st.button("Run Comparison"):
 
         except Exception as e:
             row["Error"] = str(e)
+            st.error(f"{model_name} failed: {e}")
 
         results.append(row)
 
     st.session_state["results"] = pd.DataFrame(results)
-    st.session_state["models"] = trained_models
+    st.session_state["models"] = dict(trained_models)
 
 # ── Results ─────────────────────────────────
 if "results" in st.session_state:
@@ -160,10 +165,16 @@ if "results" in st.session_state:
     st.subheader("Metrics Table")
     st.dataframe(results_df)
 
-    # Download
-    st.download_button("Download Metrics CSV",
-                       results_df.to_csv(index=False).encode(),
-                       "metrics.csv")
+    # ── DEBUG PANEL ──────────────────────────
+    st.subheader("🔍 Debug Info")
+
+    st.write("Columns:", results_df.columns.tolist())
+
+    if "Precision" in results_df.columns:
+        st.write("Precision non-null count:", results_df["Precision"].notna().sum())
+        st.write(results_df[["Model", "Precision"]])
+    else:
+        st.error("Precision column missing!")
 
     # ── Visual Comparison ────────────────────
     st.subheader("Visual Comparison")
@@ -173,30 +184,40 @@ if "results" in st.session_state:
         if c in results_df.columns and results_df[c].notna().any()
     ]
 
+    st.write("Available metrics:", metric_cols)
+
     if metric_cols:
         default_metric = "Precision" if "Precision" in metric_cols else metric_cols[0]
 
-        metric = st.selectbox("Choose metric", metric_cols,
-                              index=metric_cols.index(default_metric))
+        metric = st.selectbox(
+            "Choose metric",
+            metric_cols,
+            index=metric_cols.index(default_metric)
+        )
 
         plot_df = results_df[["Model", metric]].dropna()
 
-        fig, ax = plt.subplots()
-        vals = plot_df[metric].values
-        best_idx = vals.argmax() if metric not in ["RMSE", "MAE"] else vals.argmin()
+        if not plot_df.empty:
+            fig, ax = plt.subplots()
 
-        bars = ax.bar(plot_df["Model"], vals)
+            vals = plot_df[metric].values
+            best_idx = vals.argmax() if metric not in ["RMSE", "MAE"] else vals.argmin()
 
-        for i, b in enumerate(bars):
-            if i == best_idx:
-                b.set_edgecolor("black")
-                b.set_linewidth(2)
+            bars = ax.bar(plot_df["Model"], vals)
 
-        ax.set_title(metric)
-        ax.tick_params(axis="x", rotation=30)
-        st.pyplot(fig)
+            for i, b in enumerate(bars):
+                if i == best_idx:
+                    b.set_edgecolor("black")
+                    b.set_linewidth(2)
 
-    # ── NEW: Precision vs Recall Chart ───────
+            ax.set_title(metric)
+            ax.tick_params(axis="x", rotation=30)
+
+            st.pyplot(fig)
+        else:
+            st.warning(f"No valid values for {metric}")
+
+    # ── Precision vs Recall ──────────────────
     if "Precision" in results_df.columns and "Recall" in results_df.columns:
 
         st.subheader("Precision vs Recall Comparison")
@@ -218,6 +239,8 @@ if "results" in st.session_state:
             ax.legend()
 
             st.pyplot(fig)
+        else:
+            st.warning("No valid Precision/Recall values to plot")
 
     # ── Export Predictions ───────────────────
     st.subheader("Export Predictions")
