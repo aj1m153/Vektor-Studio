@@ -12,7 +12,7 @@ from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 
-st.set_page_config(page_title="Compare Models", layout="wide")
+st.set_page_config(page_title="Compare Model", layout="wide")
 st.title("Compare Models")
 
 # ── Check dataset ─────────────────────────────
