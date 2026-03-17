@@ -16,7 +16,7 @@ ML Studio is an end-to-end machine learning application built with Streamlit. It
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/ml_Studio.git
+git clone https://github.com/aj1m153/ml_Studio.git
 cd ml_Studio
 ```
 
