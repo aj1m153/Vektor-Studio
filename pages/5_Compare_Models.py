@@ -348,9 +348,9 @@ if st.button("Run Comparison", type="primary", key="cmp_run"):
     st.session_state["cmp_cms"]       = all_cms
     st.session_state["cmp_feat_imp"]  = all_feat_imp
     st.session_state["cmp_probs"]     = all_probs
-    st.session_state["cmp_task"]      = task
+    st.session_state["cmp_task_res"]     = task
     st.session_state["cmp_y_test"]    = y_test
-    st.session_state["cmp_features"]  = list(X_train.columns)
+    st.session_state["cmp_feat_res"]    = list(X_train.columns)
     st.success(f"Trained {len(selected_models)} model(s) successfully.")
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -363,9 +363,9 @@ all_results  = st.session_state["cmp_results"]
 all_cms      = st.session_state["cmp_cms"]
 all_feat_imp = st.session_state["cmp_feat_imp"]
 all_probs    = st.session_state["cmp_probs"]
-comp_task    = st.session_state["cmp_task"]
+comp_task    = st.session_state["cmp_task_res"]
 y_test       = st.session_state["cmp_y_test"]
-comp_features = st.session_state["cmp_features"]
+comp_features = st.session_state.get("cmp_feat_res", [])
 
 results_df  = pd.DataFrame(all_results)
 metric_cols = [c for c in results_df.columns if c not in ("Model","Status")]
